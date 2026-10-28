@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Проверка знаний — СИЗ</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Verdana, sans-serif; background: #f4f4f4; color: #333; }
+header { background: #2c3e50; color: #fff; padding: 15px; text-align: center; font-size: 1.4em; font-weight: bold; }
+.container { max-width: 700px; margin: 15px auto; padding: 15px; }
+.screen { display: none; }
+.screen.active { display: block; }
+h2 { margin: 10px 0 15px; color: #2c3e50; }
+h3 { margin: 15px 0 10px; color: #2c3e50; }
+label { display: block; margin: 10px 0 5px; font-weight: bold; }
+input[type="text"], select { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; background: #fff; }
+button { padding: 12px 18px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+button:active { transform: scale(0.98); }
+.primary { background: #3498db; color: #fff; }
+.secondary { background: #95a5a6; color: #fff; }
+.danger { background: #e74c3c; color: #fff; }
+.danger-light { background: #fdecea; color: #c0392b; width: 100%; margin-top: 15px; }
+.wide { width: 100%; margin-top: 15px; }
+.hidden { display: none !important; }
+.test-top { display: flex; justify-content: space-between; font-weight: bold; background: #2c3e50; color: #fff; padding: 10px 15px; border-radius: 6px; }
+.progress { height: 6px; background: #e0e0e0; border-radius: 3px; margin: 10px 0; overflow: hidden; }
+.progress-fill { height: 100%; background: #3498db; width: 0%; transition: width .3s; }
+.test-info { margin: 5px 0 12px; color: #7f8c8d; font-size: 14px; }
+.question-text { background: #fff; border-left: 5px solid #3498db; padding: 15px; border-radius: 6px; font-size: 17px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+#options-list { display: flex; flex-direction: column; gap: 10px; }
+.option-btn { background: #fff; border: 2px solid #dcdfe3; color: #333; text-align: left; padding: 14px; font-size: 16px; font-weight: normal; border-radius: 8px; line-height: 1.4; }
+.option-btn.selected { border-color: #3498db; background: #eaf4fd; }
+.score-box { background: #fff; border-radius: 8px; padding: 20px; text-align: center; font-size: 20px; font-weight: bold; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.score-box.pass { border: 3px solid #27ae60; color: #1e8449; }
+.score-box.fail { border: 3px solid #e74c3c; color: #c0392b; }
+.toggle-review { background: #8e44ad; color: #fff; width: 100%; margin-top: 15px; }
+.review-item { background: #fff; border-radius: 8px; padding: 12px; margin-top: 10px; border-left: 5px solid #ccc; font-size: 15px; }
+.review-item.ok { border-left-color: #27ae60; }
+.review-item.bad { border-left-color: #e74c3c; }
+.review-item .rq { font-weight: bold; margin-bottom: 6px; }
+.review-item .ra { margin: 2px 0; }
+.review-item .ra.bad-text { color: #c0392b; }
+.review-item .ra.ok-text { color: #1e8449; }
+.review-item .rt { color: #7f8c8d; font-size: 13px; margin-top: 6px; }
+.journal-actions { display: flex; gap: 10px; margin-bottom: 15px; }
+.journal-item { background: #fff; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.journal-item b { color: #2c3e50; }
+</style>
+</head>
+<body>
+<header>🛡️ Проверка знаний</header>
+<div class="container">
+  <div id="screen-start" class="screen active">
+    <h2>Проверка знаний</h2>
+    <label for="inp-fio">ФИО</label>
+    <input type="text" id="inp-fio" placeholder="Фамилия Имя Отчество">
+    <label for="inp-reason">Причина проверки</label>
+    <select id="inp-reason">
+      <option>Первичная</option>
+      <option selected>Плановая</option>
+      <option>Внеплановая</option>
+    </select>
+    <button id="btn-start" class="primary wide">Начать тест</button>
+    <button id="btn-results" class="secondary wide">📊 Журнал результатов</button>
+  </div>
+  <div id="screen-test" class="screen">
+    <div class="test-top">
+      <span id="test-progress">Вопрос 1/10</span>
+      <span id="test-timer">00:00</span>
+    </div>
+    <div class="progress"><div id="progress-fill" class="progress-fill"></div></div>
+    <div id="test-info" class="test-info"></div>
+    <div id="question-text" class="question-text"></div>
+    <div id="options-list"></div>
+    <button id="btn-abort" class="danger-light">Прервать тест</button>
+  </div>
+  <div id="screen-result" class="screen">
+    <h2 id="result-title">Результат</h2>
+    <div id="result-score" class="score-box"></div>
+    <button id="btn-toggle-review" class="toggle-review hidden"></button>
+    <div id="review-list" class="hidden"></div>
+    <button id="btn-to-start" class="primary wide">На главный экран</button>
+  </div>
+  <div id="screen-journal" class="screen">
+    <h2>Журнал результатов</h2>
+    <div class="journal-actions">
+      <button id="btn-export" class="secondary">Экспорт в CSV</button>
+      <button id="btn-clear-journal" class="danger">Очистить</button>
+    </div>
+    <div id="journal-list"></div>
+    <button id="btn-journal-back" class="primary wide">Назад</button>
+  </div>
+</div>
+<script>
+const QUESTIONS = [
+  { q: "В каком документе фиксируется выдача работникам и возврат ими СИЗ?", o: ["В личной карточке учета выдачи СИЗ", "В журнале регистрации вводного инструктажа по охране труда", "В трудовом договоре между работником и работодателем"], c: 3, topic: "п. 25 Правил обеспечения работников СИЗ" },
+  { q: "В каком случае обязателен применение защитного лицевого щитка?", o: ["В случае обработки материалов и заготовок", "В случае уборки производственных помещений", "В случае управления электроинструментом", "В случае нахождения в постоянном электромагнитном поле"], c: 1, topic: "Средства индивидуальной защиты от механических повреждений" },
+  { q: "В каком случае разрешается использовать каску, если она подвергалась ударной нагрузке?", o: ["Только если было получено разрешение руководителя работ", "Только если воздействие было краткосрочным", "Только если на каске отсутствуют видимые дефекты", "Ни в каком случае"], c: 4, topic: "Средства индивидуальной защиты головы" },
+  { q: "В рамках проведения обучения по использованию СИЗ, работники должны быть обучены:", o: ["Методам их ношения", "Методам их применения"], c: 1, topic: "п. 39 Порядка обучения по охране труда" },
+  { q: "Все СИЗ должны эксплуатироваться в соответствии с:", o: ["Указаниями в эксплуатационной документации", "Требованиями правил по охране труда", "Указаниями в документации и требованиями правил"], c: 3, topic: "п. 62 Правил обеспечения работников СИЗ" },
+  { q: "Где следует хранить защитные лицевые щитки?", o: ["Вблизи источников тепла и света", "В помещениях с повышенной влажностью", "На открытом воздухе", "В помещениях, защищенных от прямого солнечного света и влаги"], c: 4, topic: "Средства индивидуальной защиты от механических повреждений" },
+  { q: "Где следует хранить средства индивидуальной защиты ног?", o: ["Рядом с электронагревателями", "На батарее", "Вдали от обогревательных приборов", "В помещениях с повышенной влажностью"], c: 3, topic: "Средства индивидуальной защиты ног" },
+  { q: "Для чего предназначен термокостюм?", o: ["Для защиты головы от термического воздействия электрической дуги", "Для защиты головы от поражения электрическим током до 1000 В", "Для защиты от контакта с токоведущими частями свыше 1000 В"], c: 1, topic: "Средства индивидуальной защиты головы" },
+  { q: "Для чего предназначены противошумные наушники?", o: ["Для защиты от повышенного уровня шума", "Для защиты от шума только при ручном инструменте", "Для защиты от шума только на станках"], c: 1, topic: "Средства индивидуальной защиты органа слуха" },
+  { q: "Для чего предназначены фильтрующие противогазы?", o: ["Для предотвращения попадания пыли, дыма, тумана", "Для защиты от паро- и газообразных примесей при кислороде не менее установленного значения", "Для защиты при кислороде менее 17%", "Для защиты от удушающих веществ"], c: 2, topic: "Средства индивидуальной защиты органов дыхания" },
+  { q: "За счет чего осуществляется приобретение, выдача, хранение СИЗ?", o: ["За счет работника", "За счет работодателя"], c: 2, topic: "п. 3 Правил обеспечения работников СИЗ" },
+  { q: "Имеет ли право работник самостоятельно заменять СИЗ?", o: ["Не имеет право", "Имеет право, если СИЗ обеспечивают равноценную защиту", "Только с согласия работодателя"], c: 2, topic: "п. 55 Правил обеспечения работников СИЗ" },
+  { q: "Какие СИЗ от поражения электрическим током могут быть диэлектрическими?", o: ["Диэлектрические галоши и боты", "Термостойкие ботинки", "Полумаска для защиты от статического электричества", "Сменные термостойкие сапоги"], c: 1, topic: "Средства индивидуальной защиты ног" },
+  { q: "Какие обязанности по применению СИЗ возлагаются на работника?", o: ["Проводить осмотр исправности СИЗ", "Соблюдать правила эксплуатации", "Вернуть СИЗ по истечении срока", "Все вышеперечисленные"], c: 4, topic: "п. 12 Правил обеспечения работников СИЗ" },
+  { q: "Какие обязанности по применению СИЗ возлагаются на работника?", o: ["Эксплуатировать по назначению", "Информировать о потере целостности", "Вернуть утратившие СИЗ", "Все вышеперечисленные"], c: 4, topic: "п. 12 Правил обеспечения работников СИЗ" },
+  { q: "Какие очки использовать для защиты глаз от летящих твердых частиц?", o: ["Очки для защиты от механических повреждений", "Очки для защиты от ионизирующих излучений", "Очки для защиты от химических воздействий"], c: 1, topic: "Средства индивидуальной защиты глаз" },
+  { q: "Какие работники подлежат обучению по использованию СИЗ?", o: ["Все работники", "Работники, устраивающиеся на работу", "Работники, применяющие СИЗ, требующие практических навыков"], c: 3, topic: "п. 38 Порядка обучения по охране труда" },
+  { q: "Какие СИЗ называются дежурными?", o: ["Выдаваемые на постоянной основе", "Выдаваемые на время выполнения работ", "Стандартный набор", "Выдаваемые посменно"], c: 2, topic: "п. 32 Правил обеспечения работников СИЗ" },
+  { q: "Какие СИЗ работник не возвращает работодателю?", o: ["Дерматологические СИЗ и СИЗ однократного применения", "СИЗ однократного применения", "Дерматологические СИЗ"], c: 1, topic: "п. 71 Правил обеспечения работников СИЗ" },
+  { q: "Какие СИЗОД применять при отсутствии кислорода?", o: ["Изолирующие дыхательные аппараты", "Противоаэрозольные противогазы", "Самоспасатели", "Респираторы"], c: 1, topic: "Средства индивидуальной защиты органов дыхания" },
+  { q: "Какие системы использовать при работах на высоте для ограничения перемещения?", o: ["Системы ограничения движения", "Системы позиционирования", "Страховочные системы", "Удерживающие системы"], c: 4, topic: "Средства индивидуальной защиты от падения с высоты" },
+  { q: "Какие СИЗ глаз применять при взвесях вредных химических веществ?", o: ["Очки для защиты от химического воздействия", "Очки для защиты от пыли и аэрозолей", "Очки для защиты от расплавленного металла", "Очки для защиты от оптического излучения"], c: 2, topic: "Средства индивидуальной защиты глаз" },
+  { q: "Какова цель применения страховочных систем при работах на высоте?", o: ["Предотвращение удара о поверхность", "Предотвращение падения с высоты", "Уменьшение силы удара", "Удержание в подвешенном состоянии"], c: 1, topic: "Средства индивидуальной защиты от падения с высоты" },
+  { q: "Какое утверждение о применении СИЗ глаз от механических повреждений верно?", o: ["Регулировать длину дужек для плотного прилегания", "Дужки должны быть нерегулируемыми", "Очки носить линзами вниз"], c: 1, topic: "Средства индивидуальной защиты глаз" },
+  { q: "Когда выдаются СИЗ для защиты от температур?", o: ["По запросу работника", "В начале каждого года", "С наступлением соответствующего периода года", "По договоренности с работодателем"], c: 3, topic: "п. 50 Правил обеспечения работников СИЗ" },
+  { q: "Кто осуществляет контроль за заменой СИЗ?", o: ["Работодатель", "Работник"], c: 1, topic: "п. 72 Правил обеспечения работников СИЗ" },
+  { q: "Можно ли допускать работника без СИЗ?", o: ["Можно", "Можно на срок не более 3 дней", "Можно на срок для приобретения СИЗ", "Нельзя"], c: 4, topic: "п. 10 Правил обеспечения работников СИЗ" },
+  { q: "Обучение по использованию СИЗ проводится?", o: ["Периодичность устанавливает работодатель", "Не реже 1 раза в 6 месяцев", "Не реже 1 раза в год", "Не реже 1 раза в 3 года"], c: 4, topic: "п. 41 Порядка обучения по охране труда" },
+  { q: "От чего защищает каска?", o: ["Только от падения предметов", "Только от ударов головой", "Только от осколков стекла", "От всего перечисленного"], c: 4, topic: "Средства индивидуальной защиты головы" },
+  { q: "Разрешается ли выносить СИЗ за пределы территории?", o: ["Разрешается", "Запрещается (за исключением случаев, утвержденных локальным актом)"], c: 2, topic: "п. 60-61 Правил обеспечения работников СИЗ" },
+  { q: "С какого дня исчисляются сроки эксплуатации СИЗ?", o: ["С первого использования", "Со дня заключения трудового договора", "Со дня фактической выдачи"], c: 3, topic: "п. 56 Правил обеспечения работников СИЗ" },
+  { q: "Чем очищать линзы очков от пыли и аэрозолей?", o: ["Раствором чистящего средства", "Струей чистой воды, воздуха или мягкой кистью", "Растворителем", "Жесткой кистью"], c: 2, topic: "Средства индивидуальной защиты глаз" },
+  { q: "Что входит в обязанности работодателя по обеспечению СИЗ?", o: ["Не допускать работников без СИЗ", "Обеспечить обучение", "Обеспечить контроль", "Обеспечить уход", "Все вышеперечисленное"], c: 5, topic: "п. 10 Правил обеспечения работников СИЗ" },
+  { q: "Что служит для защиты лица от теплового удара?", o: ["Защитный лицевой щиток со светофильтром", "Защитный термостойкий щиток", "Защитный лицевой щиток от механических повреждений", "Защитный лицевой щиток от ионизирующего излучения"], c: 2, topic: "Средства индивидуальной защиты лица" },
+  { q: "Что сделать при порче СИЗ головы?", o: ["Сообщить руководителю для замены", "Самостоятельно устранить повреждения", "Продолжить работу", "Снять СИЗ и продолжить с осторожностью"], c: 1, topic: "Средства индивидуальной защиты головы" },
+  { q: "Что сделать при ухудшении самочувствия в загрязненной зоне?", o: ["Проверить герметичность", "Покинуть загрязненную зону", "Заменить СИЗ, не покидая зону", "Проверить концентрацию веществ"], c: 2, topic: "Средства индивидуальной защиты органов дыхания" },
+  { q: "Что обеспечивается удерживающими системами при работах на высоте?", o: ["Предотвращение падения с высоты", "Предотвращение удара о поверхность", "Безопасность в подвешенном состоянии", "Безопасность при наличии опоры"], c: 1, topic: "Средства индивидуальной защиты от падения с высоты" },
+  { q: "Что обязан сделать работник по истечении сроков эксплуатации СИЗ?", o: ["Вернуть СИЗ работодателю", "Самостоятельно утилизировать"], c: 1, topic: "п. 71 Правил обеспечения работников СИЗ" },
+  { q: "Что такое СИЗ?", o: ["Средство для предотвращения воздействия вредных факторов", "Средство для предотвращения воздействия вредных факторов, особых температурных условий, и защиты от загрязнения", "Средство для предотвращения воздействия вредных факторов и защиты от загрязнения"], c: 2, topic: "ст. 209 Трудового кодекса РФ" }
+];
+
+const EXAM_COUNT = 10;
+const PASS_PERCENT = 80;
+const NEXT_DELAY = 300;
+
+let order = [], pos = 0, locked = false, answers = [];
+let timerInt = null, startTs = 0, userFio = '', userReason = '';
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function fmtTime(sec) {
+  return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
+}
+function loadJournal() {
+  try { return JSON.parse(localStorage.getItem('examJournal') || '[]'); } catch (e) { return []; }
+}
+function saveJournal(j) { localStorage.setItem('examJournal', JSON.stringify(j)); }
+
+function startTest() {
+  userFio = document.getElementById('inp-fio').value.trim();
+  userReason = document.getElementById('inp-reason').value;
+  if (!userFio) { alert('Введите ФИО'); return; }
+  order = shuffle(QUESTIONS.map((_, i) => i)).slice(0, Math.min(EXAM_COUNT, QUESTIONS.length));
+  pos = 0; locked = false; answers = [];
+  startTs = Date.now();
+  clearInterval(timerInt);
+  timerInt = setInterval(() => {
+    document.getElementById('test-timer').textContent = fmtTime(Math.floor((Date.now() - startTs) / 1000));
+  }, 1000);
+  document.getElementById('test-timer').textContent = '00:00';
+  document.getElementById('test-info').textContent = userFio + ' | ' + userReason;
+  showScreen('screen-test');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[order[pos]];
+  locked = false;
+  document.getElementById('test-progress').textContent = 'Вопрос ' + (pos + 1) + '/' + order.length;
+  const pf = document.getElementById('progress-fill');
+  if (pf) pf.style.width = Math.round(pos / order.length * 100) + '%';
+  document.getElementById('question-text').textContent = q.q;
+  const list = document.getElementById('options-list');
+  list.innerHTML = '';
+  q.o.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.textContent = (i + 1) + '. ' + text;
+    btn.addEventListener('click', () => optionClick(i + 1, btn));
+    list.appendChild(btn);
+  });
+}
+
+function optionClick(num, btn) {
+  if (locked) return;
+  locked = true;
+  answers.push({ qIndex: order[pos], chosen: num });
+  btn.classList.add('selected');
+  setTimeout(() => {
+    try {
+      pos++;
+      if (pos >= order.length) finishTest();
+      else renderQuestion();
+    } catch (e) { alert('Ошибка: ' + e.message); }
+  }, NEXT_DELAY);
+}
+
+function finishTest() {
+  clearInterval(timerInt);
+  const timeSec = Math.floor((Date.now() - startTs) / 1000);
+  let correct = 0, badCount = 0;
+  answers.forEach(a => {
+    const q = QUESTIONS[a.qIndex];
+    if (q && a.chosen === q.c) correct++; else badCount++;
+  });
+  const total = order.length || 1;
+  const percent = Math.round(correct / total * 100);
+  const passed = percent >= PASS_PERCENT;
+  try {
+    const j = loadJournal();
+    j.push({
+      date: new Date().toLocaleString('ru-RU'), fio: userFio, reason: userReason, mode: 'Тест',
+      score: correct + ' из ' + total, percent: percent + '%',
+      result: passed ? 'ЗАЧЁТ' : 'НЕ ЗАЧЁТ', time: fmtTime(timeSec)
+    });
+    saveJournal(j);
+  } catch (e) {}
+  const titleEl = document.getElementById('result-title');
+  if (titleEl) titleEl.textContent = passed ? '✅ Тест сдан' : '❌ Тест не сдан';
+  const box = document.getElementById('result-score');
+  if (box) {
+    box.className = 'score-box ' + (passed ? 'pass' : 'fail');
+    box.innerHTML = 'Правильных ответов: ' + correct + ' из ' + total +
+      ' (' + percent + '%)<br>Время: ' + fmtTime(timeSec) + '<br>Порог: ' + PASS_PERCENT + '%';
+  }
+  showScreen('screen-result');
+  try {
+    const rev = document.getElementById('review-list');
+    if (rev) {
+      rev.innerHTML = '';
+      answers.forEach((a, idx) => {
+        const q = QUESTIONS[a.qIndex];
+        if (!q) return;
+        const ok = a.chosen === q.c;
+        const div = document.createElement('div');
+        div.className = 'review-item ' + (ok ? 'ok' : 'bad');
+        div.innerHTML =
+          '<div class="rq">' + (idx + 1) + '. ' + (ok ? '✅' : '❌') + ' ' + q.q + '</div>' +
+          (ok ? '' : '<div class="ra bad-text">Ваш ответ: ' + a.chosen + '. ' + q.o[a.chosen - 1] + '</div>') +
+          '<div class="ra ok-text">Правильный ответ: ' + q.c + '. ' + q.o[q.c - 1] + '</div>' +
+          '<div class="rt"> ' + q.topic + '</div>';
+        rev.appendChild(div);
+      });
+      rev.classList.add('hidden');
+    }
+    const tbtn = document.getElementById('btn-toggle-review');
+    if (tbtn) {
+      tbtn.textContent = ' Показать разбор ошибок (' + badCount + ')';
+      tbtn.classList.remove('hidden');
+    }
+  } catch (e) {}
+}
+
+function renderJournal() {
+  const j = loadJournal();
+  const list = document.getElementById('journal-list');
+  list.innerHTML = '';
+  if (j.length === 0) { list.innerHTML = '<p>Журнал пуст</p>'; return; }
+  j.slice().reverse().forEach(rec => {
+    const div = document.createElement('div');
+    div.className = 'journal-item';
+    div.innerHTML = '<b>' + rec.fio + '</b> — ' + rec.mode + '<br>' + rec.date + ' | ' + rec.reason +
+      '<br>Результат: ' + rec.score + ' (' + rec.percent + ') | ' + rec.result + ' | Время: ' + rec.time;
+    list.appendChild(div);
+  });
+}
+function exportJournal() {
+  const j = loadJournal();
+  if (j.length === 0) { alert('Журнал пуст'); return; }
+  let csv = '\uFEFFДата;ФИО;Причина;Режим;Результат;Процент;Оценка;Время\n';
+  j.forEach(r => {
+    csv += [r.date, r.fio, r.reason, r.mode, r.score, r.percent, r.result, r.time]
+      .map(v => '"' + String(v).replace(/"/g, '""') + '"').join(';') + '\n';
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.download = 'journal_result.csv';
+  a.href = URL.createObjectURL(blob);
+  a.click();
+}
+
+document.getElementById('btn-start').addEventListener('click', startTest);
+document.getElementById('btn-abort').addEventListener('click', () => {
+  if (confirm('Прервать тест? Результат не сохранится.')) { clearInterval(timerInt); showScreen('screen-start'); }
+});
+document.getElementById('btn-to-start').addEventListener('click', () => showScreen('screen-start'));
+document.getElementById('btn-toggle-review').addEventListener('click', () => {
+  document.getElementById('review-list').classList.toggle('hidden');
+});
+document.getElementById('btn-results').addEventListener('click', () => { renderJournal(); showScreen('screen-journal'); });
+document.getElementById('btn-journal-back').addEventListener('click', () => showScreen('screen-start'));
+document.getElementById('btn-export').addEventListener('click', exportJournal);
+document.getElementById('btn-clear-journal').addEventListener('click', () => {
+  if (confirm('Очистить журнал результатов?')) { saveJournal([]); renderJournal(); }
+});
+</script>
+</body>
+</html>
